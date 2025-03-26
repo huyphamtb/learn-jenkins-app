@@ -77,7 +77,10 @@ pipeline {
                         }
                     }
                 }
-                stage('Deploy') {
+                
+            }
+        }
+        stage('Deploy') {
                     agent {
                         docker {
                             image 'node:18-alpine'
@@ -90,10 +93,10 @@ pipeline {
                             node_modules/.bin/netlify --version
                             echo "deploying $NETLIFY_SITE_ID"
                             node_modules/.bin/netlify status
+                            node_modules/.bin/netlify deploy --dir=build --prod
+
                         '''
                     }
                 }
-            }
-        }
     }
 }
