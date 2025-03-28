@@ -5,7 +5,7 @@ pipeline {
         NETLIFY_AUTH_TOKEN = credentials('netlify-token')
     }
     stages {
-        stage {
+        stage('aws') {
             agent{
                 docker {
                     image 'amazon/aws-cli'
