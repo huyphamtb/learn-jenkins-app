@@ -5,19 +5,6 @@ pipeline {
         NETLIFY_AUTH_TOKEN = credentials('netlify-token')
     }
     stages {
-        stage('aws') {
-            agent{
-                docker {
-                    image 'amazon/aws-cli'
-                    args "--entrypoint="
-                }
-            }
-            steps {
-                sh '''
-                aws --version
-                '''
-            }
-        }
         stage ('docker'){
             steps {
                 sh 'docker build -t my-playwright .'
