@@ -23,7 +23,6 @@ pipeline {
                 '''
             }
         }
-
         stage('Run Tests') {
             parallel {
                 stage('Unit Test') {
@@ -45,7 +44,6 @@ pipeline {
                         }
                     }
                 }
-
                 stage('E2E Test') {
                     agent {
                         docker {
@@ -95,7 +93,7 @@ pipeline {
                     node_modules/.bin/netlify --version
                     node_modules/.bin/netlify status
                     node_modules/.bin/netlify deploy --dir=build --json > deploy-output.json
-                    CI_ENVIRONMENT_URL = $(node_modules/.bin/node-jq -r '.deploy_url' deploy-output.json)  
+                    export CI_ENVIRONMENT_URL=$(node_modules/.bin/node-jq -r '.deploy_url' deploy-output.json)
                     npx playwright test --reporter=html
                 '''
             }
@@ -108,7 +106,7 @@ pipeline {
                         keepAll: false,
                         reportDir: 'playwright-report',
                         reportFiles: 'index.html',
-                        reportName: 'stageing E2E',
+                        reportName: 'Staging E2E',
                         reportTitles: '',
                         useWrapperFileDirectly: true
                     ])
