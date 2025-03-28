@@ -5,6 +5,19 @@ pipeline {
         NETLIFY_AUTH_TOKEN = credentials('netlify-token')
     }
     stages {
+        stage {
+            agent{
+                docker {
+                    image 'amazon/aws-cli'
+                    args "--entrypoint=''"
+                }
+            }
+            steps {
+                sh '''
+                aws --version
+                '''
+            }
+        }
         stage('Build') {
             agent {
                 docker {
@@ -79,29 +92,7 @@ pipeline {
                 }
             }
         }
-
-        stage('Deploy Staging') {
-            agent {
-                docker {
-                    image 'node:18-alpine'
-                    reuseNode true
-                }
-            }
-            steps {
-                sh '''
-                    npm install netlify-cli node-jq
-                    node_modules/.bin/netlify --version
-                    echo "deploying $NETLIFY_SITE_ID"
-                    node_modules/.bin/netlify status
-                    node_modules/.bin/netlify deploy --dir=build --json > deploy-output.json
-                   
-                '''
-                script{
-                    env.STAGING_URL = sh(script: "node_modules/.bin/node-jq -r '.deploy_url' deploy-output.json" , returnStdout: true)
-                }
-            }
-        }
-        stage('staging E2E Test') {
+        stage('staging deploy & E2E Test') {
             agent {
                 docker {
                     image 'mcr.microsoft.com/playwright:v1.51.1-noble'
@@ -109,10 +100,15 @@ pipeline {
                 }
             }
             environment {
-                CI_ENVIRONMENT_URL = "${env.STAGING_URL}"
+                CI_ENVIRONMENT_URL = "url"
             }
             steps {
                 sh '''
+                    npm install netlify-cli node-jq
+                    node_modules/.bin/netlify --version
+                    node_modules/.bin/netlify status
+                    node_modules/.bin/netlify deploy --dir=build --json > deploy-output.json
+                    CI_ENVIRONMENT_URL = $(node_modules/.bin/node-jq -r '.deploy_url' deploy-output.json)  
                     npx playwright test --reporter=html
                 '''
             }
@@ -132,34 +128,7 @@ pipeline {
                 }
             }
         }
-        stage ('approval'){
-            steps{
-                timeout(1) {
-                    input 'proceed?'
-                }
-                    
-            }
-            
-        }
-        stage('Deploy Prod') {
-            agent {
-                docker {
-                    image 'node:18-alpine'
-                    reuseNode true
-                }
-            }
-            steps {
-                sh '''
-                    npm install netlify-cli
-                    node_modules/.bin/netlify --version
-                    echo "deploying $NETLIFY_SITE_ID"
-                    node_modules/.bin/netlify status
-                    node_modules/.bin/netlify deploy --dir=build --prod
-                '''
-            }
-        }
-
-        stage('Post E2E Test') {
+        stage('Post deploy & E2E Test') {
             agent {
                 docker {
                     image 'mcr.microsoft.com/playwright:v1.51.1-noble'
@@ -171,6 +140,10 @@ pipeline {
             }
             steps {
                 sh '''
+                    npm install netlify-cli
+                    node_modules/.bin/netlify --version
+                    node_modules/.bin/netlify status
+                    node_modules/.bin/netlify deploy --dir=build --prod
                     npx playwright test --reporter=html
                 '''
             }
